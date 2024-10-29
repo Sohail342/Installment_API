@@ -5,6 +5,7 @@ from .serializers import CategorySerializer, ProductSerializer
 from rest_framework.pagination import PageNumberPagination
 from django_filters import rest_framework as filters
 from django.db.models import Q
+from rest_framework.response import Response
 
 # Custom pagination class Categories
 class CategoryPagination(PageNumberPagination):
@@ -63,3 +64,25 @@ class ProductListView(generics.ListAPIView):
             queryset = queryset.filter(Q(name__icontains=search))
 
         return queryset.order_by('name')
+    
+
+class ProductDetailView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = 'id'
+    permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        
+        # Get the installment plan
+        installment_plan = instance.get_installment_plan()
+        
+        # Create a response dictionary
+        response_data = {
+            'product': serializer.data,
+            'installments': installment_plan
+        }
+
+        return Response(response_data)
